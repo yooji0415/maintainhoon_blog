@@ -3,17 +3,19 @@ import { nav } from '@/data/nav';
 
 export default function Nav() {
   return (
-    <nav className="w-full bg-gray-700">
-      <div className="flex max-width-sm">
-        {nav.map((item) => {
-          const { title, location } = item;
-          return (
-            <Link href={location} key={title}>
-              {title}
-            </Link>
-          );
-        })}
-      </div>
-    </nav>
+    <>
+      {nav.map((item) => {
+        const { title, location } = item;
+        return (
+          <Link
+            href={location}
+            key={title}
+            className="text-center transition duration-250 hover:scale-125 hover:text-green-500"
+          >
+            {title}
+          </Link>
+        );
+      })}
+    </>
   );
 }
