@@ -6,11 +6,11 @@ interface ContainerProps {
   children: ReactNode;
 }
 
-export default function Container(props: ContainerProps) {
+export default function Layout(props: ContainerProps) {
   return (
     <>
       <Header />
-      <main>{props.children}</main>
+      <main className="max-w-screen-md flex flex-col px-10 m-auto">{props.children}</main>
       <Footer />
     </>
   );
