@@ -1,6 +1,19 @@
+import { allPosts } from 'contentlayer/generated';
+import { GetStaticProps, InferGetStaticPropsType } from 'next';
+import RecentPosts from '@/components/RecentPosts';
 import Image from 'next/image';
 
-export default function Home() {
+export const getStaticProps: GetStaticProps = async () => {
+  const posts = allPosts.sort((a, b) => Number(new Date(b.date)) - Number(new Date(a.date)));
+
+  return {
+    props: {
+      posts,
+    },
+  };
+};
+
+export default function Home({ posts }: InferGetStaticPropsType<typeof getStaticProps>) {
   return (
     <>
       <section className="my-10">
@@ -40,6 +53,7 @@ export default function Home() {
       <section className="mt-12 mb-10">
         <h1 className="font-bold text-2xl sm:text-4xl font-mono">📝 Recent Posts</h1>
       </section>
+      <RecentPosts posts={posts} />
     </>
   );
 }
