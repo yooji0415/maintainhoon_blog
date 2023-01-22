@@ -1,5 +1,6 @@
 import { ReactNode, useEffect, useRef } from 'react';
 import Nav from './Nav';
+import Footer from './Footer';
 import Image from 'next/image';
 
 interface ContainerProps {
@@ -38,6 +39,7 @@ export default function Container(props: ContainerProps) {
         </div>
       </header>
       <main>{props.children}</main>
+      <Footer />
     </>
   );
 }
