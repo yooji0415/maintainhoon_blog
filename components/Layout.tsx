@@ -10,7 +10,7 @@ export default function Layout(props: LayoutProps) {
   return (
     <>
       <Header />
-      <main className="max-w-screen-md flex flex-col px-10 m-auto">{props.children}</main>
+      <main className="max-w-screen-md flex flex-col  px-10 m-auto">{props.children}</main>
       <Footer />
     </>
   );
