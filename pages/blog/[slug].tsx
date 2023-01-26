@@ -11,7 +11,7 @@ const Post = ({ post }: InferGetStaticPropsType<typeof getStaticProps>) => {
   const MDXComponent = useMDXComponent(post.body.code);
   return (
     <div className="mt-10 prose">
-      <h1>{post.title}</h1>
+      <h1 className="mb-16">{post.title}</h1>
       <MDXComponent />
     </div>
   );
