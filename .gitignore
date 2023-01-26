@@ -15,7 +15,6 @@
 # production
 /build
 .contentlayer
-/posts
 
 # misc
 .DS_Store

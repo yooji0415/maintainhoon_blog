@@ -1,0 +1,336 @@
+---
+title: JavaScript 키워드 this
+date: 2022-09-13
+description: JavaScript 코드를 작성하면서 this 라는 키워드를 자주 사용하지만 내부 동작을 잘 모르기 때문에 이를 파해쳐본다.
+---
+
+# 🤔 this 란 무엇인가?
+
+---
+
+## 왜 this 를 알아보고 싶었는가?
+
+JavaScript 코드를 작성하면서 this 라는 키워드를 자주 사용하게 된다.
+하지만 정확하게 이 this 가 어떻게 동작하는지를 모르다보니 머리 속에서 생각했을 때는
+잘 동작해야 하는 코드가 정상동작하지 않는 경우가 있었다.
+이 기회에 this 가 어떻게 동작하는지 알아보고 싶어서 조사하게 되었다.
+
+학습에 참고한 자료는 **모던 자바스크립트 Deep Dive** 책을 참고하였다.
+
+## this 란?
+
+객체지향 프로그램에서 말하는 객체는 **상태를 나타내는 프로퍼티**와 **동작을 나타내는 메서드**를 논리적인 단위로 묶은 복합적인 구조이다.
+
+이때 메서드가 자신이 속한 객체의 프로퍼티를 참조하려면 먼저
+**자신이 속한 객체를 가리키는 식별자를 참조할 수 있어야** 한다.
+객체를 만드는 방식 중 가장 기본적인 객체 리터럴 방식을 먼저 생각해보자
+
+```jsx
+const circle = {
+  radius: 7,
+  getDiameter() {
+    return 2 * circle.radius;
+  },
+};
+
+console.log(circle.getDiameter());
+```
+
+위 경우는 정상적으로 동작할 수 있다. 하지만 자기 자신이 속한 객체를 재귀적으로 참조하는 방식은 무언가 일반적인 경우는 아닌 것 같다는 생각이 든다.
+
+일단 위 코드는 정상 동작이 이루어지니 다른 경우를 생각해보자
+생성자 함수의 경우에는 어떠한 방법으로 자신이 속한 객체를 참조할 수 있을까?
+
+```jsx
+function Circle(radius) {
+	?.radius = radius;
+}
+
+Circle.prototpye.getDiameter = function() {
+	return 2 * ?.radius;
+}
+
+const circle = new Circle(5);
+```
+
+무언가 허전하다. 맞다! ? 에 들어가야할 키워드는 **this** 이다.
+
+왜 이 this 가 필요할까? 를 생각해보면
+생성자 함수 내부에서 프로퍼티 또는 메서드를 추가하기 위해 자신이 생성할 인스턴스를 참조할 수 있어야 한다. 하지만 맨 마지막 줄 처럼 생성자 함수에 의한 객체 생성 방식은 먼저 생성자 함수를 정의한 이후 **new** 연산자와 함께 생성자 함수를 호출해야 한다.
+
+정리하자면 생성자 함수로 인스턴스를 생성하려면 먼저 생성자 함수가 존재해야 한다.
+그런데 생성자 함수를 정의하는 시점에는 인스턴스를 생성하기 전이기에 생성할 인스턴스를 가리키는 식별자를 알 수 없다. 닭과 달걀 같은 문제인 것 같다…
+
+이러한 문제를 해결하기 위해서 **this** 라는 특수한 식별자가 제공된다.
+**this** 는 자신이 속한 객체 또는 자신이 생성할 인스턴스를 가리키는 **자기 참조 변수**다.
+**this** 를 통해서 **자신이 속한 객체 또는 자신이 생성할 인스턴스의 프로퍼티나 메서드를 참조**할 수 있다.
+
+대략적인 this 키워드를 알게 되었는데 왜 this 가 어디서는 A 값, 어디서는 B 값일까?
+여기서 무언가 추측할 수 있는 것은 this 라는 키워드는 고정된 값을 가리키는게
+고정으로 정해지는 것이 아닌, **동적으로 this 바인딩이 일어난다는 것**을 추측할 수 있다.
+
+> **바인딩이란 식별자와 값을 연결하는 과정을 의미한다.** 간단한 예로는 변수 선언을 생각하면 된다. 변수 이름(식별자)과 확보된 메모리 공간의 주소를 바인당 하는 것이다. **this 바인딩은 this와 this가 가리킬 객체를 바인딩 하는 것**이다.
+
+<br />
+
+# 🤯 함수 호출 방식과 this 바인딩
+
+---
+
+this 바인딩은 함수 호출 방식에 따라서 **동적으로 바인딩** 된다.
+크게 일반 **함수 호출, 메서드 호출, 생성자 함수 호출** 상황을 알아보고
+추가적으로 apply, call, bind 에 의한 간접 호출을 알아보자.
+
+## 일반 함수 호출
+
+**기본적으로는 this 에 전역 객체가 바인딩** 된다.
+
+```jsx
+function foo() {
+  console.log(`foo 의 this: ${this}`); // 결과 window
+  function bar() {
+    console.log(`bar 의 this: ${this}`); // 결과 window
+  }
+  bar();
+}
+
+foo();
+```
+
+위 예시처럼 전역 함수는 물론이고 중첩 함수를 일반 함수로 호출하면
+함수 내부의 this 에는 전역 객체가 바인딩 된다.
+
+하지만 위에서 우리가 보았든 보통 this 라는 키워드는 객체의 프로퍼티나 메서드를 참조하기 위한 자기 참조 변수이니 해당 예시로 살펴보면 아래와 같다.
+
+```jsx
+const value = 1;
+
+const obj = {
+  value: 100,
+  foo() {
+    console.log('foo 의 this : ' + this); // obj 객체
+    console.log('foo 의 this value : ' + this.value); // 100
+
+    function bar() {
+      console.log('bar 의 this : ' + this); // window 객체
+      console.log('bar 의 this value : ' + this.value); // undefinded
+    }
+
+    bar();
+  },
+};
+
+obj.foo();
+```
+
+위 처럼 **메서드 내에서 정의된 중첩 함수도 일반 함수로 호출되면 중첩 함수 내부에의
+this 에는 전역 객체가 바인딩** 된다.
+
+> **생각해볼 내용**
+> 맨 위 상단에 const value 를 **var value** 로 바꾸면 어떤 일이 일어날까?
+> 정답은 **bar 함수 내부의 this.value 의 값이 1로** 나오게 된다.
+> 왜 이런 일이 일어날까? 이유는 **var 로 선언한 값이 전역 객체의 프로퍼티로
+> 사용되기 때문**이다.
+> 더 알아보고 싶은 경우 아래 북마크로 이동해보자
+
+[전역 객체](https://ko.javascript.info/global-object)
+
+```jsx
+var value = 1;
+
+const obj = {
+  foo() {
+    console.log('foo 의 this : ' + this); // obj 객체
+    setTimeout(function () {
+      console.log('콜백의 this : ' + this); // window
+      console.log('콜백의 this value : ' + this.value); // 1
+    }, 100);
+  },
+};
+
+obj.foo();
+```
+
+콜백 함수의 경우도 살펴보면 위와 같다.
+**콜백 함수 내부의 this 에도 전역 객체가 바인딩** 된다.
+이렇게 보면 **어떠한 함수라도 일반 함수로 호출되면 this 에 전역 객체가 바인딩** 된다는 것을 알 수 있다.
+
+아니 그런데 중첩 함수나 콜백 함수의 this 가 변경되는 상황은 우리가 원하는 상황이 아니다. 이를 해결하는 방법이 있지 않을까? 아래는 3가지 방법을 대략적으로 알려준다.
+
+```jsx
+// 변수를 이용한다.
+foo() {
+	const that = this;
+	setTimeout(function() {
+		console.log(that.value);
+	}, 100);
+}
+
+// bind 메서드를 통한 바인딩
+foo() {
+	setTimeout(function() {
+		console.log(this.value);
+	}.bind(this), 100);
+}
+
+// 화살표 함수를 이용한 바인딩 일치
+foo() {
+	// 화살표 함수 내부의 this 는 상위 스코프의 this 를 가리킨다.
+	setTimeout(() => {
+		console.log(this.value);
+	}, 100);
+}
+```
+
+## 메서드 호출
+
+**메서드 내부의 this 에는 메서드를 호출한 객체**, 즉 메서드를 호출할 때 **‘.’ 앞에 기술한 객체가 바인딩** 된다. 메서드 내부의 this 는 메서드를 소유한 객체가 아닌 **메서드를 호출한 객체가 바인딩** 된다는 것을 주의해야 한다.
+
+```jsx
+const person = {
+  name: 'Lee',
+  getName() {
+    return this.name;
+  },
+};
+
+console.log(person.getName()); // Lee
+
+const anotherPerson = {
+  name: 'Kim',
+};
+
+anotherPerson.getName = person.getName;
+console.log(anotherPerson.getName()); // Kim
+
+const getName = person.getName;
+
+console.log(getName()); // 브라우저에서는 window.name 값으로 ''
+// Node.js 에서는 undefind
+```
+
+> **어떻게 이렇게 동작하는 것일까?** > **메서드는 바인딩된 함수**이다. 위 person 객체의 getName 프로퍼티가 가리키는 함수 객체는 person 객체에 포함된 것이 아니라 독립적으로 존재하는 별도의 객체이다. getName 프로퍼티가 함수 객체를 가리키고 있을 뿐이다.
+
+프로토타입 메서드 내부에서 사용된 this 도 일반 메서드와 마찬가지로 메서드를 호출한 객체에 바인딩 된다. 아래 예시를 통해 살펴볼 수 있다.
+
+```jsx
+function Person(name) {
+  this.name = name;
+}
+
+Person.prototype.getName = function () {
+  return this.name;
+};
+
+const test = new Person('Lee');
+console.log(test.getName()); // Lee
+
+Person.prototype.name = 'Kim';
+console.log(Person.prototype.getName()); // Kim
+```
+
+## 생성자 함수 호출
+
+생성자 함수 내부의 this 에는 **생성자 함수가 생성할 인스턴스가 바인딩** 된다.
+이는 **클래스도 동일하다 생각**해도 될 것 같다.
+혹시 클래스와 생성자 함수 둘의 this 차이가 있는 경우 알려주길 바란다…
+
+```jsx
+function Circle(radius) {
+  this.radius = radius;
+  this.getDiameter = function () {
+    return 2 * this.radius;
+  };
+}
+
+const circle1 = new Circle(5);
+const circle2 = new Circle(10);
+
+console.log(circle1.getDiameter()); // 10
+console.log(circle2.getDiameter()); // 20
+```
+
+## Function.prototype.apply/call/bind 메서드에 의한 간접 호출
+
+**apply, call, bind 메서드는 Function.prototype 의 메서드**이다.
+이 말은 **모든 함수가 상속받아서 사용할 수 있는 메서드**라는 뜻이다.
+
+**apply, call 메서드는 this 로 사용할 객체와 인수 리스트를 인수로 전달받아 함수를 호출**한다.
+아래는 apply, call 메서드의 사용 방법을 JSDoc 형식으로 나타낸 것이다.
+
+```jsx
+/**
+ * @param thisArg - this로 사용할 객체
+ * @param argsArray - 함수에 전달할 인수 리스트의 배열 또는 유사 배열
+ * @returns 호출된 함수의 반환값
+ */
+
+Function.prototype.apply(thisArg[, argsArray])
+
+/**
+ * @param thisArg - this로 사용할 객체
+ * @param arg1, arg2, ... - 함수에 전달할 인수 리스트
+ * @returns 호출된 함수의 반환값
+ */
+
+Function.prototype.call(thisArg[, arg1[, arg2[, ...]]])
+```
+
+apply 는 call 과 유사하지만, 매개변수 처리 방법에서 차이가 있다.
+위 예시로 알 수 있듯 call 은 일반적인 함수처럼 매개변수를 받지만, apply 는 배열형태의 매개변수를 받는다.
+
+하지만 본질적인 기능은 함수를 호출한다는 점에서 동일하다.
+
+```jsx
+function getThisBinding() {
+  return this;
+}
+
+const thisArg = { a: 1 };
+console.log(getThisBinding.apply(thisArg)); // {a: 1}
+console.log(getThisBinding.call(thisArg)); // {a: 1}
+```
+
+```jsx
+function getThisBinding() {
+  console.log(arguments);
+  return this;
+}
+
+const thisArg = { a: 1 };
+console.log(getThisBinding.apply(thisArg, [1, 2, 3]));
+// Arguments(3) [1, 2, 3, callee: f, Symbol(Symbol.iterator): f]
+// {a: 1}
+console.log(getThisBinding.call(thisArg, 1, 2, 3));
+// Arguments(3) [1, 2, 3, callee: f, Symbol(Symbol.iterator): f]
+// {a: 1}
+```
+
+bind 메서드는 메서드의 this 와 메서드 내부의 중첩 함수 혹은 콜백 함수의 this 가 불일치하는 문제를 해결하기 위해 사용되는 메서드이다.
+
+```jsx
+const person = {
+  name: 'Lee',
+  foo(callback) {
+    setTimeout(callback.bind(this), 100);
+  },
+};
+
+person.foo(function () {
+  console.log(`Hi! my name is ${this.name}.`); // Hi! my name is Lee.
+});
+```
+
+<br />
+
+# 🧐 짧은 소감
+
+---
+
+이게 왜 동작하는거지? 이게 왜 에러지? 에 대한 상황이 항상 코드를 작성하면서 존재하는데
+this 키워드도 그 중 하나였다. 가끔씩 나오는 에러 상황에 대해서 다른 방법으로 바꾸면서 해결을 했지만
+이번 기회에 내부 동작을 조금이나마 이해하게 되었고 또 좋은 해결 방법들을 알게 되어서 좋았다.
+
+또한 이번에 참고한 모던 자바스크립트 Deep Dive 책도 읽으면서 해당 부분을 가볍게 읽었던 기억이 있는데
+그때의 내가 조금은 후회스럽기도 하다. 뭔가 책 분량이 많은데 시간이 촉박하다보니 직접적으로 내 코드 작성에
+도움이 될 법한 문법 위주로 학습을 했는데 이번 기회에 그런 부분을 좀 더 공부 할 수 있었던 점도 좋았다.

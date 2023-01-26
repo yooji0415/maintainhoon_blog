@@ -1,0 +1,139 @@
+---
+title: WebSocket에 대해서 알아보자
+date: 2022-12-31
+description: RFC 문서 기반으로 WebSocket 내부에 대해서 대략적으로 알아본다.
+---
+
+# 😂 어쩌다 WebSocket을?
+
+프로젝트를 진행하면서 DM 기능을 구현해야 했는데 이때 Socket.io를 사용하게 되었다.
+Socket.io는 WebSocket을 이용하는 라이브러리로 WebSocket을 편하게 사용할 수 있도록 한 라이브러리이다.
+대략적으로는 그냥 이렇게 동작하겠거니~ 했는데 너무 무시하는건 아닌지 싶었다. (실제로 앞으로 몇 번 더 만날 것 같기도 했다.)
+따라서 이 글에서는 내가 궁금했던 부분들을 조금 정리하고 대략적인 WebSocket을 알아보려고 한다.
+참고한 자료는 크게 다음과 같다.
+
+- https://www.rfc-editor.org/rfc/rfc6455
+- https://www.youtube.com/watch?v=MPQHvwPxDUw&list=PLgXGHBqgT2TvpJ_p9L_yZKPifgdBOzdVH&index=98
+- https://gdsc-university-of-seoul.github.io/websocket/
+
+<br />
+
+# 📖 WebSocket이란?
+
+RFC 6455 WebSocket 프로토콜 문서에는 어떻게 설명을 할까?
+
+> The WebSocket Protocol enables **two-way communication** between a **client running untrusted code in a controlled environment** to a **remote host that has opted-in to communications from that code**. The security model used for this is the **origin-based security model commonly used by web browsers**. The protocol consists of an **opening handshake** followed by basic message framing, **layered over TCP**. **The goal of this technology is to provide a mechanism for browser-based applications that need two-way communication with servers that does not rely on opening multiple HTTP connections**
+
+오랜만에 영어를 보니 머리가 아프지만 대략적인 위 말을 정리하면 WebSocket의 특징은 이렇게 되는 것 같다.
+
+- WebSocket Protocol은 **양방향 통신**을 지원한다.
+- 사용하는 보안 모델은 **일반적인 보안 모델**을 사용한다.
+- **opening handshake가 이루어지고 TCP를 통해 계층화** 한다.
+- 이 기술의 목표는 여러 HTTP 연결을 열지 않는 서버와의 양방향 통신이 필요한 브라우저 기반 애플리케이션을 위한 메커니즘을 제공하는 것이다.
+
+항상 새로운 기술은 이전 기술의 불편함이 있었기 때문에 탄생한다. 대체 이전 기술들은 어떠한 불편함이 있었던 것일까? 이는 배경 파트를 읽고 알 수 있었다.
+
+역사적으로 클라이언트와 서버 간의 양방향 통신을 필요로 하는 웹 애플리케이션을 만드는 데는 업스트림 알림을 별개의 HTTP 호출로 전송하면서 **HTTP를 남용**해야 했으며 이로 인해서 문제가 발생했다고 한다. 대략 이런 문제들이다.
+
+- 서버는 각 클라이언트에 정보를 전송하기 위한 **기본 TCP 연결과 각 수신 메시지에 대한 TCP 연결**을 사용해야 한다.
+- 와이어 프로토콜은 각각의 클라이언트-서버 메시지가 **HTTP 헤더를 갖는 높은 오버헤드**를 갖는다.
+- 클라이언트 측 스크립트는 응답을 추적하기 위해 나가는 연결에서 들어오는 연결로의 매핑을 유지해야 한다.
+
+정리를 하자면 대략 **쓸대없이 많은 HTTP를 사용해야 하고, TCP 연결을 두 개를 해야하며, HTTP 헤더의 오버헤드가 너무 크다는 것**이다.
+
+그러면 어떻게 해야할까? 머리 속에서 떠오르는 것은
+
+- 1. **단일 TCP 연결**을 하면 안되는건가?
+- 2. **오버헤드를 조금 줄이면** 안되는 건가?
+
+이러한 내용들이 떠오르는데 이러한 내용을 WebSocket protocol에서 적용한다.
+**WebSocket protocol은 HTTP를 전송 계층으로 사용하여 기존 프록시, 필터링, 인증 등의 이점을 얻는 기존 양방향 통신 기술을 대체하도록 설계**되었다.
+
+## 🤝🏻 opening handshake
+
+일단 TCP 연결에서 이루어지는 3-way-handshake를 다들 알고 있을 것이라 생각한다. 그거와 비슷하지만 다르게 서로 연결을 하는 opening handshake 과정을 거친다.
+client에서 요청, server에서 응답 이렇게 두번의 과정을 통해서 진행이 되는데 이때 주고 받는 패킷을 확인해보자
+
+우선 클라이언트에서 보내는 패킷이다.
+
+```http
+GET /chat HTTP/1.1 // 반드시 GET 요청을 통해서 이루어져야 하고 HTTP는 1.1이상이여야 한다.
+Host: server.example.com // 서버의 주소
+Upgrade: websocket // 현 프로토콜에서 다른 프로토콜로 업그레이드 혹은 변경을 요청한다.
+Connection: Upgrade // Upgrade 헤더 필드가 있으면 반드시 Upgrade 옵션을 주어야 한다.
+Sec-WebSocket-Key: dGhlIHNhbXBsZSBub25jZQ== // 연결을 위한 base64 인코딩 키 값
+Origin: http://example.com // 클라이언트 주소
+Sec-WebSocket-Protocol: chat, superchat // 서브프로토콜
+Sec-WebSocket-Version: 13
+```
+
+위와 같이 GET 요청을 통해서 WebSocke서버에게 **'나 WebSocket protocol로 너랑 연결하고 싶어! 내 시크릿 키는 이렇게 된단다!'** 라는 요청을 서버에게 보내준다.
+
+그러면 서버에서 리턴해주는 패캣을 살펴보면 다음과 같다.
+
+```http
+HTTP/1.1 101 Switching Protocols // 101 Switching Protocols로 WebSocket 연결을 의미
+Upgrade: websocket
+Connection: Upgrade
+Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo= // 클라이언트 Sec-WebSocket을 계산한 값
+```
+
+클라이언트에서 보내는 구조보다 더 단순한 모습이다. 이것도 간단하게 말해보면 **'오케이 너가 보낸거 확인했고 연결을 WebSocket으로 했어 그리고 너가 준 시크릿 키로 내가 계산한 값은 이렇게 되는데 너가 확인해봐!'** 가 된다.
+
+## 📨 데이터 전송
+
+이제 연결은 어떻게 하는지 알 것 같고 서로 어떻게 데이터 통신을 하는지 알아보아야 할 것 같다.
+이 내용은 **RFC 6455 5. Data Framing** 부분을 보면 대략 어떠한 구조로 보내는지 알 수 있다.
+
+해당 부분을 보면 WebSocket protocol에서는 **데이터를 일련의 frame을 사용하여 전송**한다고 한다.
+그러면 frame 이란 무엇인가?
+frame은 데이터 전송 과정에서 가장 작은 단위의 데이터로 작은 헤더와 payload로 구성이 되어있다.
+![](https://velog.velcdn.com/images/yooji0415/post/3ebe9777-dfb2-413b-b189-834c8145a064/image.png)
+
+(출처: https://www.rfc-editor.org/rfc/rfc6455#section-5.1)
+다음과 같이 구성이 되어있는데 대략적인 header 구조를 살펴보면 다음과 같다.
+
+- **FIN**: **메시지의 마지막 fragment(조각)**이란 것을 알려주는 플래그이다.
+- **RSV1, RSV2, RSV3**: 기본은 0값이고 정의를 했을 경우에만 다른 값을 넣을 수 있다.
+  만약 정의하지 않은 값이면 _Fail the WebSocket Connection_ 을 수행해야 한다.
+- **opcode**: **payload 데이터의 해석을 정의**한다. 이 또한 알 수 없는 opcode가 수신되면 _Fail the WebSocket Connection_ 을 수행해야 한다.
+  - 0x0(Continue): 전체 데이터의 일부임을 의미한다.
+  - 0x1(Text): 포함된 데이터가 UTF-8 텍스트라는 의미이다.
+  - 0x2(Binary): 포함된 데이터가 이진 데이터라는 의미이다.
+  - 0x8(Close): Close handshake를 시작한다는 의미이다.
+- **MASK**: **payload 데이터를 마스킹할지 여부를 정의**한다. **1로 설정하면 마스킹 키가 존재하며 이 키는 payload 데이터의 마스킹을 해제하는데 사용**된다. **클라이언트에서 서버로 전송되는 모든 프레임은 이 비트를 1로 설정한다.**
+- **PayloadLen**: 이 프레임에 포함된 **데이터의 총 길이**를 나타낸다.
+
+대략적으로 메시지를 frame 단위로 나누고 이를 전송한다는 것을 알게 되었으니 이제 어떻게 송수신이 이루어지는지 간략하게 알아보려고 한다.
+송신은 어떻게 될까? 이는 6. Sending and Receving Data 부분을 보면 알 수 있다.
+
+- 1. **엔드포인트는 우선 WebSocket 연결이 열린 상태인지를 확인한다.**
+- 2. **이후 데이터를 WebSocket frame에 캡슐화를 진행해야하고, 만약 데이터가 길면 fragmentation을 통해서 쪼갠 후 캡슐화를 진행한다.**
+- 3. **데이터를 포함하는 첫 번째 프레임의 opcode는 해석할 데이터에 대해 적절한 값으로 설정해준다.**
+- 4. **데이터를 포함하는 마지막 프레임의 FIN 비트를 1로 설정한다.**
+- 5. **클라이언트가 데이터를 보낼 경우에는 위에서 명시한대로 MASK 비트를 1로 설정한다.**
+- 6. 만약 RSV1, RSV2, RSV3에 대해서 설정이 이우러졌다면 해당 비트를 설정한다.
+- 7. 이렇게 만들어진 프레임들을 **기본 네트워크 연결**을 통해 전송된다.
+
+## 📝 간단한 특징 정리
+
+기본적인 특징은 아래와 같다.
+
+- **최초 접속에만 HTTP protocol 위에서 opening handshake를 진행하며 http header를 사용한다.**
+- **WebSocket을 위한 별도의 포트가 없으며, 기존 포트 HTTP 80, HTTPS 443을 이용한다.**
+- **frame 이라는 단위로 메시지를 쪼게서 송수신을 한다.**
+- **메시지에 포함될 수 있는 내용들은 텍스트와 바이너리 데이터가 있다.**
+
+그러면 단점에는 뭐가 있고 어떻게 해결할까?
+
+- **WebSocket은 HTML5에서 들어온 기능이다. 그러면 하위버전은** 어떻게 해결할까?
+  - => 이럴 때 사용하는게 **Socket.io**와 **SockJS** 같은 라이브러리들이고 이 라이브러리들은 적합한 기술을 사용해서 **WebSocket처럼 동작할 수 있게 도와준다.** (그 이상의 일도 편의성을 위해 제공한다.)
+- WebSocket은 대략적으로 **문자열들을 주고받게 해줄 뿐 그 이상의 일은 해줄 수 없다.**
+- 또한 주고 받는 문자열의 해독은 온전히 어플리케이션에 맡기기 때문에 **해석이 어려울 수 있다.** 때문에 WebSocket 방식은 **sub-protocol을 사용해서 약속을 하는 경우가 많다.**
+  - => **STOMP(Simple Text Oriented Message Protocol)** 같이 해석이 편한 프로토콜이 있다.
+
+사용하면서 주의해야 할 점은 무엇이 있을까?
+
+- WebSocket이 **hop-by-hop 프로토콜이기 때문에 프록시 서버에서 가로챈 요청에 대해 WebSocket 연결이라는 정보를 추가로 명시해야 한다.**
+- 한 번 연결이 될 때 인증, 인가를 적용해줄 수 있지만 그 이후에는 따로 수행되지 않는다. 그렇기 때문에 **WebSocket 메시지에 대해서 인증을 하기 위해서는 따로 연결이 되는 동안 메시지 헤더**를 통해 인증 인가를 수행할 수 있다.
+- Client와 Server에서 **정상적으로 connection이 종료되지 않는 경우 이를 위한 error처리에 신경**을 써야 한다.

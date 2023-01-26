@@ -1,0 +1,317 @@
+---
+title: React Query 란?
+date: 2022-11-16
+description: React Query 가 무엇인지, 프로젝트에 어떻게 적용할 수 있는지 간단하게 알아본다.
+---
+
+# 🤔 React Query 란 무엇인가?
+
+---
+
+## 왜 React Query 를 알아보고 싶었는가?
+
+프로젝트 개발을 진행하면서 프론트에서 다루는 데이터의 양보다 서버에서 가져온 데이터를 다루는 작업이 많아졌고 이를 효율적으로 다룰 수 있는 방법이 있지 않을까 생각하다 React Query 라는 라이브러리를 발견하게 되었다.
+
+프로젝트에 사용하기 전에 이게 뭔지는 알아야 우리 프로젝트에 적합할지 아닐지를 판별 할 수 있을 것 같아서 기본 문법이랑 장점 등을 알아보려고 한다.
+
+참고한 자료들은 [카카오페이 프론트엔드 개발자들이 React Query를 선택한 이유](https://tech.kakaopay.com/post/react-query-1/), [react-query](https://kyounghwan01.github.io/blog/React/react-query/basic/#%E1%84%89%E1%85%A1%E1%84%8B%E1%85%AD%E1%86%BC%E1%84%92%E1%85%A1%E1%84%82%E1%85%B3%E1%86%AB-%E1%84%8B%E1%85%B5%E1%84%8B%E1%85%B2) 이 두 자료를 주로 사용했다.
+
+<br />
+
+# 👨🏻‍🏫 React Query 왜 사용하나요?
+
+---
+
+## React Query 알아보기
+
+> 우선 **React Query 는 React Application 에서 서버의 상태를 불러오고, 캐싱하며, 지속적으로 동기화하고 업데이트 하는 작업을 도와주는 라이브러리**이며, **Hook 을 사용하여 React Component 내부에서 자연스럽게 서버의 데이터를 사용할 수 있는 방법을 제공**한다.
+
+말로만 들으니까 잘 이해가 안되는 부분들이 있다. 일단 대략적으로 서버와의 통신 작업을 도와주고 결과로 온 데이터들의 관리를 도와주는 것으로 보이는데 코드와 함께 알아보기로 한다.
+
+그 전에 React Query 를 사용하면 어떠한 장점이 있다고 주로 하는지 살펴보면 아래와 같은 장점들이 있다고 한다.
+
+> 「if(kakao)2021 - 카카오페이 프론트엔드 개발자들이 React Query를 선택한 이유」 세줄요약
+>
+> 1. React Query는 React Application에서 서버 상태를 불러오고, 캐싱하며, 지속적으로 동기화하고 업데이트하는 작업을 도와주는 라이브러리입니다.
+> 2. 복잡하고 장황한 코드가 필요한 다른 데이터 불러오기 방식과 달리 React Component **내부에서 간단하고 직관적으로 API를 사용**할 수 있습니다.
+> 3. 더 나아가 React Query에서 제공하는 **캐싱, Window Focus Refetching 등 다양한 기능을 활용하여 API 요청과 관련된 번잡한 작업 없이 "핵심 로직"에 집중**할 수 있습니다.
+
+> react-query 장점
+>
+> - **캐싱**
+> - **get을 한 데이터에 대해 update를 하면 자동으로 get을 다시 수행**한다. (예를 들면 게시판의 글을 가져왔을 때 게시판의 글을 생성하면 게시판 글을 get하는 api를 자동으로 실행 )
+> - **데이터가 오래 되었다고 판단되면 다시 get** (`invalidateQueries`)
+> - 동일 데이터 **여러번 요청하면 한번만** 요청한다. (옵션에 따라 중복 호출 허용 시간 조절 가능)
+> - **무한 스크롤** (**[Infinite Queries (opens new window)](https://react-query.tanstack.com/guides/infinite-queries)**)
+> - **비동기 과정을 선언적**으로 관리할 수 있다.
+> - **react hook과 사용하는 구조가 비슷**하다.
+
+대략 두 글에서 공통적으로 장점이라고 뽑는 부분을 보면 캐싱, API 요청이 쉽고 직관적, React Application 과의 호완이라고 볼 수 있다. 이제 코드를 보면서 위 장점이 어떻게 들어나는지 확인해보자
+
+## 코드와 함께 알아보기
+
+```jsx
+import axios from 'axios';
+import {
+  QueryClient,
+  QueryClientProvider,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from 'react-query';
+
+// React Query는 내부적으로 queryClient를 사용하여
+// 각종 상태를 저장하고, 부가 기능을 제공합니다.
+const queryClient = new QueryClient();
+
+function App() {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <Menus />
+    </QueryClientProvider>
+  );
+}
+
+function Menus() {
+  const queryClient = useQueryClient();
+  // "/menu" API에 Get 요청을 보내 서버의 데이터를 가져옵니다.
+  const { data } = useQuery('getMenu', () => axios.get('/menu').then(({ data }) => data));
+  // "/menu" API에 Post 요청을 보내 서버에 데이터를 저장합니다.
+  const { mutate } = useMutation((suggest) => axios.post('/menu', { suggest }), {
+    // Post 요청이 성공하면 위 useQuery의 데이터를 초기화합니다.
+    // 데이터가 초기화되면 useQuery는 서버의 데이터를 다시 불러옵니다.
+    onSuccess: () => queryClient.invalidateQueries('getMenu'),
+  });
+
+  return (
+    <div>
+      <h1> Tomorrow's Lunch Candidates! </h1>
+      <ul>
+        {data.map((item) => (
+          <li key={item.id}> {item.title} </li>
+        ))}
+      </ul>
+      <button
+        onClick={() =>
+          mutate({
+            id: Date.now(),
+            title: 'Toowoomba Pasta',
+          })
+        }
+      >
+        Suggest Tomorrow's Menu
+      </button>
+    </div>
+  );
+}
+```
+
+아주 간단한 메뉴 관련 페이지의 내용이다. 내부 코드를 모두 이해할 필요는 없지만 간단하게 보면 우리가 평소에 사용하던 **GET 은 useQuery 를 통해서 처리**하고 있고, **Post 요청은 useMutation 을 통해서 처리**하고 있는 것을 볼 수 있다.
+
+또한 눈에 들어오는 부분은 onSuccess 부분으로 **queryClient 의 invalidateQueries 를 통해서 POST 가 이루어진 이후 재 GET 요청**을 하는 것을 볼 수 있다. 이 포스트에서 모든 내용을 다룰 수 없더라도 GET, POST 부분을 대신 처리해주는 **useQuery**, **useMutation** 부분을 알아보려고 한다.
+
+### useQuery
+
+```jsx
+// 1. 가장 기본적인 형태의 React Query useQuery Hook 사용 예시
+const { data } = useQuery(
+  queryKey, // 이 Query 요청에 대한 응답 데이터를 캐시할 때 사용할 Unique Key (required)
+  fetchFn, // 이 Query 요청을 수행하기 위한 Promise를 Return 하는 함수 (required)
+  options, // useQuery에서 사용되는 Option 객체 (optional)
+);
+
+// 2. option 중의 하나인 enabled 를 사용한 예시
+const { data: todoList, error, isFetching } = useQuery('todos', fetchTodoList);
+const {
+  data: nextTodo,
+  error,
+  isFetching,
+} = useQuery('nextTodos', fetchNextTodoList, {
+  enabled: !!todoList, // true가 되면 fetchNextTodoList를 실행한다
+});
+
+// 3. return 값을 나눠서 받을 수 있다.
+const { isLoading, isError, data, error } = useQuery('todos', fetchTodoList, {
+  refetchOnWindowFocus: false, // react-query는 사용자가 사용하는 윈도우가 다른 곳을 갔다가 다시 화면으로 돌아오면 이 함수를 재실행합니다. 그 재실행 여부 옵션 입니다.
+  retry: 0, // 실패시 재호출 몇번 할지
+  onSuccess: (data) => {
+    // 성공시 호출
+    console.log(data);
+  },
+  onError: (e) => {
+    // 실패시 호출 (401, 404 같은 error가 아니라 정말 api 호출이 실패한 경우만 호출됩니다.)
+    // 강제로 에러 발생시키려면 api단에서 throw Error 날립니다. (참조: https://react-query.tanstack.com/guides/query-functions#usage-with-fetch-and-other-clients-that-do-not-throw-by-default)
+    console.log(e.message);
+  },
+});
+```
+
+우선 useQuery 는 데이터를 GET 위한 api 입니다.
+
+- **첫 번째 파라미터로는 query key (unique key)** 가 들어갑니다.
+  - 넣어준 query key 를 통해서 **다른 컴포넌트에서도 해당 키를 사용하면 호출이 가능**합니다.
+  - **query key 로는 string 과 배열**을 받을 수 있습니다.
+    - **string 으로 사용할 경우 기본적인 key** 의 기능을 해주고,
+    - 배열로 넘기면 **0번 인덱스 값은 string** 으로 다른 컴포넌트에서 부를 값이 들어가고, **이후 인덱스의 값들은 query 함수 내부에 파라미터로 값이 전달**됩니다.
+- **두 번째 파라미터로는 요청을 수행하기 위해서 필요한 Promise 를 반환하는 함수, axios, fetch 등등의 함수**를 넣어줄 수 있습니다.
+- **세 번째 파라미터로는 option 객체**를 넣어줄 수 있습니다.
+  - 간단하게 option 중 하나인 enable 에 대해서 알아보면, option 으로 enable 을 설정할 수 있는데 값이 true 인 경우에 useQuery 실행하게 만들 수 있습니다. 이를 통해서 위 예시는 비동기 함수인 useQuery 를 순차적으로 수행하게 만들었습니다.
+- **return 값으로는 api 의 성공, 실패 여부, api return 값을 포함한 객체**를 반환합니다.
+  - 이는 한번에 1번 예제의 data 처럼 받을 수 있지만 나눠서 받을 수 있습니다. 3번 예제 코드의 리턴 값을 확인해보면 다음과 같습니다.
+    - **isLoading**: 현재 로딩 중인지 여부를 담는 값
+    - **isError**: 에러가 발생했는지 여부를 담는 값
+    - **data**: 결과로 받은 값을 가지고 있다.
+    - **error**: 어떠한 에러인지 Error 객체를 담고 있다.
+
+이제 맨 위에서 본 코드 중 useQuery 부분을 이해할 수 있다. 이제 다음 알아볼 useMutation 을 볼 순서인데 그 전에 **useQuery 를 여러번 사용할 때 귀찮은 경우를 줄여주는 useQueries** 를 짧게 보고 넘어가보려 한다.
+
+### useQueries
+
+```jsx
+// 3번의 useQuery 를 사용하는데 이 3개에 대한 로딩, 성공, 실패 처리를 모두
+// 다루는 것은 귀찮은 일이다.
+const usersQuery = useQuery('users', fetchUsers);
+const teamsQuery = useQuery('teams', fetchTeams);
+const projectsQuery = useQuery('projects', fetchProjects);
+
+// 위와 같은 문제를 해결하는 방법으로 useQueries 를 통한 방법이 있다.
+const result = useQueries([
+  {
+    queryKey: ['getRune', riot.version],
+    queryFn: () => api.getRunInfo(riot.version),
+  },
+  {
+    queryKey: ['getSpell', riot.version],
+    queryFn: () => api.getSpellInfo(riot.version),
+  },
+]);
+
+useEffect(() => {
+  console.log(result); // [{rune 정보, data: [], isSucces: true ...}, {spell 정보, data: [], isSucces: true ...}]
+  const loadingFinishAll = result.some((result) => result.isLoading);
+  console.log(loadingFinishAll); // loadingFinishAll이 false이면 최종 완료
+}, [result]);
+```
+
+위 예제가 useQueries 를 사용하는 이유를 잘 보여주는 것 같다.
+**여러번의 useQuery 를 동시에 진행하려고 할때 한번에 loading 이나 error 처리를 하기 편하게** 만들어주는 장점이 있는 것을 볼 수 있다.
+또한 구조도 useQuery 와 비슷하게 **queryKey (첫 번째 파라미터)**, **queryFn (Promise 반환 함수)** 로 되어 있는 것을 볼 수 있다.
+
+### useMutation
+
+```jsx
+// 가장 기본적인 형태의 React Query useMutation Hook 사용 예시
+const { mutate } = useMutation(
+  mutationFn, // 이 Mutation 요청을 수행하기 위한 Promise를 Return 하는 함수 (required)
+  options, // useMutation에서 사용되는 Option 객체 (optional)
+);
+```
+
+이제 POST 역할을 해줄 수 있는 useMutation 을 알아보려 한다.
+
+- useMutaion Hook으로 수행되는 Mutation 요청은 HTTP METHOD **POST, PUT, DELETE** 요청과 같이 서버에 Side Effect를 발생시켜 서버의 상태를 변경시킬 때 사용한다.
+- useMutaion Hook의 첫번째 파라미터는 **이 Mutation 요청을 수행하기 위한 Promise를 Return 하는 함수**이며, useMutation의 return 값 중 mutate _(또는 mutateAsync)_ 함수를 호출하여 서버에 Side Effect를 발생시킬 수 있다.
+
+예제 코드와 함께 이해를 더 해보려 한다. 우선 처음 올린 예제와 함께 알아본다.
+
+```jsx
+// "/menu" API에 Post 요청을 보내 서버에 데이터를 저장합니다.
+  const { mutate } = useMutation(
+    (suggest) => axios.post('/menu', { suggest }),
+    {
+      // Post 요청이 성공하면 위 useQuery의 데이터를 초기화합니다.
+      // 데이터가 초기화되면 useQuery는 서버의 데이터를 다시 불러옵니다.
+      onSuccess: () => queryClient.invalidateQueries('getMenu'),
+    },
+  );
+...
+      <button
+        onClick={() =>
+          mutate({
+            id: Date.now(),
+            title: 'Toowoomba Pasta',
+          })
+        }
+      >
+        Suggest Tomorrow's Menu
+      </button>
+```
+
+우선 첫 번째 인자로 **새롭게 입력된 메뉴 값 (suggest) 을 POST 로 처리하는 함수**를 넣어준 것을 볼 수 있다. 이를 통해서 api 통신을 진행할 것이다.
+
+이후 옵션을 보면 **onSuccess** 를 넣어주었는데 위에서 정의해준 **POST 통신이 완료되면 어떠한 행동을 할지 정해준 것**이다. 여기에서는 **getMenu queryKey 의 재 전송을 요청**한 것을 볼 수 있다.
+
+또한 return 값으로 전달해준 **mutate 를 button 의 onClick 에 연결하여 처리**를 하는 것을 볼 수 있다.
+
+대략적으로 어떻게 사용할지에 대한 감이 잡힌다.
+위 두 기능 이외에도 React Query 가 지원하는 것이 많을건데 이는 시간이 여유로우면 더 추가할 예정이다. ~~뭔가 더 안쓸 것 같은 기분이..?!?~~
+
+<br />
+
+# 🧐 짧은 소감
+
+---
+
+글을 작성하게 된 이유가 프로젝트에 사용할지를 알아보기 위함이 컸는데 학습을 해보고 나니 POST 나 DELETE 를 처리하고 나서 GET 을 다시 요청하는 부분이나, 간단하게 서버 데이터를 활용할 수 있는 점이 매력적이라 모든 부분은 아니더라도 일부에 적용을 해봐야겠다는 생각이 들었다.
+또한 이 외에도 지원하는 기능이 많을 것인데 좀 더 알아보고 싶다는 생각이 들었고 감사하게도 [React Query와 함께 Concurrent UI Pattern을 도입하는 방법](https://tech.kakaopay.com/post/react-query-2/) 이라는 좋은 자료가 있는 것 같아서 다음 글을 쓸 때는 위 내용을 학습하고 정리하는 시간을 가질 것 같다.
+
+# 🛠 적용한 후기
+
+---
+
+적용하면서 ‘아 이 라이브러리 편하다!’ 라는 생각을 많이 했던 것 같다. 특히 코드가 많이 줄어들었고 에러처리나 로딩에 관련해서도 손쉽게 처리를 할 수 있어서 정말 좋았다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/289a334a-df49-4bd3-b703-c4e57e96e7a6/image.png)
+</p>
+
+적용한 파트중 하나이다. 좌측을 보면 처음에 마운트시 데이터를 로드하기위한 **useEffect 부분**, 버튼을
+눌렀을 때 적용하기 위한 **API 함수 부분이 장황하게** 적힌 것을 볼 수 있다. React Query 를 적용한 우측을
+보면 코드가 상당히 간단해진 것을 볼 수 있다. **try-catch 구문을 굳이 사용하지 않아도 내부적으로 에러를
+판단해 isError** 에 넣어주기도 하고 ~~추후 코드가 변경되면서 isError, error 를 받아오게 했는데 저기에
+없네요…~~ **isLoading 을 통해서 로딩이 끝나는 시점도 제어**할 수 있었다.
+
+적용하면서 몇 번 이슈가 있었고, 그 이슈를 통해 학습을 했는데 하나는 아래 사진을 보면서 이야기하겠다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/a8baef1b-9202-46eb-9e49-350e05d752d1/image.png)
+</p>
+
+eslint 를 사용하면서 단순하게 받아온 데이터를 사용하려고 하니 빨간불이 들어오면서 ‘멈춰!!!’ 를 시전했다. 이유를 알고보니 eslint 가 하는 말은 **‘아니 저거 잘 동작할지도 모르고 로딩일 때는 뭐 보여줄건데? 님 뭐함?’** 이였다. 말을 듣고보니 맞는 말이라 어떻게 처리를 하나 보니 isError 와 isLoading 을 통해서 중간에 리턴할 값을 지정해주는 방법이 있었다.
+
+근데 막상 이렇게 하니 뭔가 이때까지 알고있던 컴포넌트는 이 모양이 아닌데.. 하면서 아쉬움이 남았고 이를 좀 예쁘게? 해줄 방법을 찾다보니 **Suspense 를 통한 해결 방법**이 있었다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/3d9ec49e-4599-4759-afbb-c92d8133c832/image.png)
+</p>
+
+위 코드는 따로 return 으로 분기한게 아닌 매 조건을 따져가면서 Loading 과 Error 상황을 처리해준 상황을 **Suspense** 와 **ErrorBoundary** 를 통해서 처리해준 부분이다. 위 상황에서는 return 값을 위에서 처리해준 것이 아니기 때문에 뭐가 다르지 하는 생각이 들 수 있든데 이전 사진이 있던 코드를 리팩토링하고 차후 추가하겠다.
+
+> **Suspense라는 React의 신기술을 사용하면 컴포넌트의 랜더링을 어떤 작업이 끝날 때까지 잠시 중단시키고 다른 컴포넌트를 먼저 랜더링할 수 있습니다.** 이 작업이 꼭 어떠한 작업이 되어야 한다는 특별한 제약 사항은 없지만 아무래도 REST API나 GraphQL을 호출하여 네트워크를 통해 **비동기로(asynchronously) 데이터를 가져오는 작업을 가장 먼저 떠오르게 됩니다.**
+> …
+> **Suspense는 어떤 컴포넌트가 읽어야 하는 데이터가 아직 준비가 되지 않았다고 리액트에게 알려주는 새로운 매커니즘**인데요. Suspense를 통해 컴포넌트가 비동기 데이터를 읽어오는 방법을 표준화하고자 리액트 팀의 장기적인 계획도 엿볼 수 있습니다.
+
+**Suspense** 는 한마디로 말하면 **‘잠시만! 나 뭐 로딩중인데 일단 이 화면 띄워줄래?’** 를 구현해주는 기능이다. 이번 글에 담기에는 너무 단독적으로 양이 많기 때문에 우선 링크를 걸어두겠습니다. [React Suspense 소개(feat. React v18)](https://www.daleseo.com/react-suspense/)
+
+**ErrorBoundary** 는 **하위 컴포넌트 트리의 어디에서든 자바스크립트 에러를 기록하며 깨진 컴포넌트 트리 대신 폴백 UI를 보여주는** React 컴포넌트입니다. 이 부분은 제가 아직 이해를 깊게 못했기 때문에 React 공식 문서를 넣어두겠습니다. **에러 경계(Error Boundaries)**
+
+또 하나의 이슈가 있었는데 이 또한 사진과 함께 알아보도록 한다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/ed791fa5-68cb-49d9-9584-9da7a9aad84d/image.png)
+</p>
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/4b5ec9d0-6d38-464a-b4d7-5368225b57cf/image.png)
+</p>
+
+위 사진이 이전, 아래 사진이 이후 코드이다. 크게 달라진 것은 없고 **query key 값으로 단순 string
+이 아닌 배열로 변경**해줬다. 대략 어떠한 상황인지를 이야기해보면 target 아이디 라는 값을 props 를
+통해서 받아오고 이를 통해서 useQuery 를 동작시키는 상황이였다. 하지만 이렇게 사용하다보니 A
+페이지(임의로 저 컴포넌트가 있는 페이지를 A 라고 하겠다.) 에서 유저 1 에 대한 정보를 보다가 유저 2
+에 대한 정보를 보려고 하면 기존에 있던 유저 1 에 대한 내용이 그대로 있었다.
+
+리렌더 문제인지도 보고 저렇게 쓰는게 아닌가도 보고 여러 자료를 찾다가 대략적으로 짐작이 가던게 **query key 에 대한 문제가 있는 것이 아닌가** 였습니다. 이에 관한 글을 참고하고 한번 아래와 같이 변경해주니 잘 동작했습니다. 참고한 자료는 다음과 같습니다. [react-query 캐싱 이슈 해결하기! 변경, 삭제할 때 쿼리 업데이트가 안된다?](https://blog.pumpkin-raccoon.com/118)
+
+무슨 문제인지 간단하게 이야기하면 **react-query 의 캐싱 방식이 설정한 key 값이 변경되지 않는 이상 캐싱 데이터를 내려준다는 것**이였습니다. 저의 경우 **위 코드에서 단순하게 string 고정 값으로 전달해주고 있었고 이로 인해서 문제가 생겼던 것**이였습니다.
+
+정확하게 깊게 공부해서 적용한게 아니라 우여곡절이 있을 것이라 생각했지만 이 정도면 나쁘지 않게 잘 적용한게 아닌가 싶기도 하고 추가적인 React-Query 관련 글을 써보고 싶다는 생각이 들었습니다.
