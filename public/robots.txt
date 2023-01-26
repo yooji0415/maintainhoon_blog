@@ -1,0 +1,9 @@
+# *
+User-agent: *
+Allow: /
+
+# Host
+Host: https://yooji-blog.vercel.app/
+
+# Sitemaps
+Sitemap: https://yooji-blog.vercel.app/sitemap.xml
