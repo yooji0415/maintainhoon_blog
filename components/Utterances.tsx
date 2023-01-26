@@ -10,7 +10,7 @@ function Utterances() {
         scriptElement.async = true;
         scriptElement.setAttribute('repo', 'yooji0415/maintainhoon_blog_comment');
         scriptElement.setAttribute('issue-term', 'pathname');
-        scriptElement.setAttribute('theme', 'preferred-color-scheme');
+        scriptElement.setAttribute('theme', 'boxy-light');
         scriptElement.setAttribute('crossorigin', 'anonymous');
         elem.appendChild(scriptElement);
       }}
