@@ -6,14 +6,18 @@ import {
   InferGetStaticPropsType,
 } from 'next';
 import { useMDXComponent } from 'next-contentlayer/hooks';
+import Utterances from '@/components/Utterances';
 
 const Post = ({ post }: InferGetStaticPropsType<typeof getStaticProps>) => {
   const MDXComponent = useMDXComponent(post.body.code);
   return (
-    <div className="mt-10 prose">
-      <h1 className="mb-16">{post.title}</h1>
-      <MDXComponent />
-    </div>
+    <>
+      <div className="mt-10 pb-10 border-b-2 mb-10 prose">
+        <h1 className="mb-16">{post.title}</h1>
+        <MDXComponent />
+      </div>
+      <Utterances />
+    </>
   );
 };
 
