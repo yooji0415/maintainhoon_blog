@@ -17,8 +17,8 @@ export default function Nav({ type, onClick }: NavProps) {
             key={title}
             className={
               type === 'normal'
-                ? 'text-center transition duration-250 hover:scale-125 hover:text-green-500'
-                : 'text-center text-lg py-4 transition duration-250 hover:scale-125 hover:text-green-500'
+                ? 'dark:text-white dark:hover:text-green-500 text-center transition duration-250 hover:scale-125 hover:text-green-500'
+                : 'dark:text-white dark:hover:text-green-500 text-center text-lg py-4 transition duration-250 hover:scale-125 hover:text-green-500'
             }
             onClick={
               onClick

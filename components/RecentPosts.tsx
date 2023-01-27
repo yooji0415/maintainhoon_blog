@@ -7,7 +7,7 @@ interface RecentPostsProps {
 
 export default function RecentPosts({ posts }: RecentPostsProps) {
   return (
-    <div className={`flex flex-col`}>
+    <div className="flex flex-col">
       {posts.map((post: Post) => (
         <BlogPost
           date={post.date}
