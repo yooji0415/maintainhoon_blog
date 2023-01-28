@@ -2,6 +2,7 @@ import { allPosts } from 'contentlayer/generated';
 import { GetStaticProps, InferGetStaticPropsType } from 'next';
 import RecentPosts from '@/components/RecentPosts';
 import Image from 'next/image';
+import Head from 'next/head';
 
 export const getStaticProps: GetStaticProps = async () => {
   const posts = allPosts.sort((a, b) => Number(new Date(b.date)) - Number(new Date(a.date)));
@@ -16,6 +17,13 @@ export const getStaticProps: GetStaticProps = async () => {
 export default function Home({ posts }: InferGetStaticPropsType<typeof getStaticProps>) {
   return (
     <>
+      <Head>
+        <meta property="og:title" content="Maintain Hoon Blog Main" />
+        <meta property="og:type" content="website" />
+        <meta property="og:description" content="학습과 경험을 기록하고 있습니다." />
+        <meta property="og:url" content="https://maintainhoon.vercel.app" />
+        <meta property="og:image" content="https://maintainhoon.vercel.app/images/metaLogo.png" />
+      </Head>
       <section className="my-10">
         <h1 className="font-bold text-2xl sm:text-4xl font-mono">🧑🏻‍💻 Maintain Hoon</h1>
       </section>

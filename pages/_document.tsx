@@ -30,13 +30,8 @@ const blockingSetInitialColorMode = `(function() {
 
 export default function Document() {
   return (
-    <Html lang="en">
-      <Head>
-        <meta property="og:title" content="Maintain Hoon Blog" />
-        <meta property="og:description" content="학습과 경험을 기록하고 있습니다." />
-        <meta property="og:url" content="https://maintainhoon.vercel.app" />
-        <meta property="og:image" content="https://maintainhoon.vercel.app/images/metaLogo.png" />
-      </Head>
+    <Html lang="ko">
+      <Head></Head>
       <body>
         <script
           dangerouslySetInnerHTML={{
