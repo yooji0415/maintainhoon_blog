@@ -1,5 +1,6 @@
 /** @type {import ('next-sitemap').IConfig} */
 module.exports = {
-  siteUrl: 'https://yooji-blog.vercel.app/',
+  siteUrl: 'https://maintainhoon.vercel.app/',
   generateRobotsTxt: true,
+  sitemapSize: 7000,
 };

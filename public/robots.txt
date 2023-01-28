@@ -3,7 +3,7 @@ User-agent: *
 Allow: /
 
 # Host
-Host: https://yooji-blog.vercel.app/
+Host: https://maintainhoon.vercel.app/
 
 # Sitemaps
-Sitemap: https://yooji-blog.vercel.app/sitemap.xml
+Sitemap: https://maintainhoon.vercel.app/sitemap.xml

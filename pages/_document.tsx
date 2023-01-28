@@ -32,10 +32,6 @@ export default function Document() {
   return (
     <Html lang="en">
       <Head>
-        <meta
-          name="google-site-verification"
-          content="DRYUx28iQjhdhrHPnvTqyrV522Tx2i4wUm53wfft6_U"
-        />
         <meta property="og:title" content="Maintain Hoon Blog" />
         <meta property="og:description" content="학습과 경험을 기록하고 있습니다." />
         <meta property="og:url" content="https://maintainhoon.vercel.app" />
