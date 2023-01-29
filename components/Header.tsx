@@ -7,8 +7,8 @@ import Link from 'next/link';
 type Theme = null | 'dark' | 'light';
 
 export default function Header() {
-  const headerRef = useRef<HTMLElement | null>(null);
-  const toggleRef = useRef<HTMLDivElement | null>(null);
+  const headerRef = useRef<HTMLElement>(null);
+  const toggleRef = useRef<HTMLDivElement>(null);
   const [onToggle, setOnToggle] = useState<boolean>(false);
   const [theme, setTheme] = useState<Theme>(null);
 

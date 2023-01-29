@@ -21,7 +21,7 @@ function setInitialColorMode() {
   const colorMode = getInitialColorMode();
   document.body.className = colorMode;
 }
-// our function needs to be a string
+
 const blockingSetInitialColorMode = `(function() {
     ${setInitialColorMode.toString()}
     setInitialColorMode();

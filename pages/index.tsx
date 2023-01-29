@@ -1,6 +1,6 @@
 import { allPosts } from 'contentlayer/generated';
 import { GetStaticProps, InferGetStaticPropsType } from 'next';
-import RecentPosts from '@/components/RecentPosts';
+import PostList from '@/components/PostList';
 import Image from 'next/image';
 import Head from 'next/head';
 
@@ -65,7 +65,7 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
       <section className="mt-12 mb-10">
         <h1 className="font-bold text-2xl sm:text-4xl font-mono">📝 Recent Posts</h1>
       </section>
-      <RecentPosts posts={posts} />
+      <PostList posts={posts} />
     </>
   );
 }

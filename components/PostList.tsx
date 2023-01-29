@@ -5,7 +5,7 @@ interface RecentPostsProps {
   posts: Post[];
 }
 
-export default function RecentPosts({ posts }: RecentPostsProps) {
+export default function PostList({ posts }: RecentPostsProps) {
   return (
     <div className="flex flex-col">
       {posts.map((post: Post) => (
