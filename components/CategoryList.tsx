@@ -9,7 +9,7 @@ interface CategoryListProps {
 const sellectedStyle =
   'px-3 py-1 bg-green-100 dark:bg-green-900 border-2 border-gray-700 dark:border-gray-300 rounded-2xl sm:text-lg';
 const defaultStyle =
-  'px-3 py-1 sm:text-lg border-2 border-gray-700 dark:border-gray-300 rounded-2xl transition duration-300 hover:scale-110 hover:hover:text-green-500';
+  'px-3 py-1 sm:text-lg border-2 border-gray-700 dark:border-gray-300 rounded-2xl transition-transform duration-300 hover:scale-110';
 
 export default function CategoryList({ setSellect, sellect }: CategoryListProps) {
   return (
