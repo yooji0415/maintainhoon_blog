@@ -21,11 +21,11 @@ category: arrangement
   - ECMAScript에는 이벤트 루프가 없다.
     - 비동기 요청과 동시성에 대한 처리는 자바스크립트 엔진을 구동하는 환경 즉 브라우저나 Node.js가 담당한다.
       - ![](https://velog.velcdn.com/images/yooji0415/post/98fe9b2e-8058-4f2d-9b29-025a167e5585/image.png)
-      - (출처: https://meetup.toast.com/posts/89)
+      - [출처](https://meetup.toast.com/posts/89)
       - 실제로 비동기 호출을 위해 사용하는 함수들은 자바스크립트 엔진이 아닌 Web API영역에 따로 정의되어 있다.
       - 또한 이벤트 루프와 태스크 큐 같은 장치도 자바스크립트 엔진 외부에 구현되어 있다.
       - ![](https://velog.velcdn.com/images/yooji0415/post/b076b1e1-dc52-4bfa-9224-691e492bfba7/image.jpeg)
-      - (출처: http://stackoverflow.com/questions/10680601/nodejs-event-loop)
+      - [출처](http://stackoverflow.com/questions/10680601/nodejs-event-loop)
       - Node.js는 비동기 I/O를 지원하기 위해 libuv라이브러리를 사용하며, 이 libuv의 이벤트 루프를 통해 스케쥴되고 실행된다.
       - **자바스크립트가 '단일 스레드'기반의 언어라는 말은 '자바스크립트 엔진이 단일 호출 스택을 사용한다'는 관점에서만 사실이다.**
       - 실제 자바스크립트가 구동되는 환경에서는 주로 여러개의 스레드가 사용되며, 이러한 구동 환경이 단일 호출 스택을 사용하는 자바스크립트 엔진과 상호 연동하기 위해 사용되는 장치가 '이벤트 루프'이다.

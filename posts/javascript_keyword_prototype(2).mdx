@@ -104,7 +104,8 @@ console.log(obj.constructor === Object); // true
 > Object(\[value\])
 > When the Object function is called with optional argument value, the following steps are taken:
 
-1. If NewTarget is neither undefined nor active function, then a Return ? OrdinaryCreateFromConstructor(NewTarget,"%Object.prototype%").
+1. If NewTarget is neither undefined nor active function, then a Return ?
+   OrdinaryCreateFromConstructor(NewTarget,"%Object.prototype%").
 2. If value is undefined or null, return OrdinaryObjectCreate("%Object.prototype%").
 3. Return ! ToObject(value).
    The "length" property of the Object constructor function is 1.
