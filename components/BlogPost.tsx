@@ -9,7 +9,7 @@ interface BlogPostProps {
 
 const BlogPost = ({ date, title, des, slug }: BlogPostProps) => {
   return (
-    <Link href={`/blog/${slug}`} passHref className="w-full my-7">
+    <Link href={`/blog/post/${slug}`} passHref className="w-full my-7">
       <div className="font-medium text-xs transition text-gray-500 dark:text-gray-300">{date}</div>
       <div className="font-extrabold text-xl sm:text-2xl mt-2 transition hover:text-green-500">
         {title}
