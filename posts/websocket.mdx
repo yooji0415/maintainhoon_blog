@@ -6,10 +6,10 @@ description: RFC 문서 기반으로 WebSocket 내부에 대해서 대략적으�
 
 # 😂 어쩌다 WebSocket을?
 
-프로젝트를 진행하면서 DM 기능을 구현해야 했는데 이때 Socket.io를 사용하게 되었다.
-Socket.io는 WebSocket을 이용하는 라이브러리로 WebSocket을 편하게 사용할 수 있도록 한 라이브러리이다.
-대략적으로는 그냥 이렇게 동작하겠거니~ 했는데 너무 무시하는건 아닌지 싶었다. (실제로 앞으로 몇 번 더 만날 것 같기도 했다.)
-따라서 이 글에서는 내가 궁금했던 부분들을 조금 정리하고 대략적인 WebSocket을 알아보려고 한다.
+프로젝트를 진행하면서 DM 기능을 구현해야 했는데 이때 Socket.io를 사용하게 되었다.<br />
+Socket.io는 WebSocket을 이용하는 라이브러리로 WebSocket을 편하게 사용할 수 있도록 한 라이브러리이다.<br />
+대략적으로는 그냥 이렇게 동작하겠거니~ 했는데 너무 무시하는건 아닌지 싶었다. (실제로 앞으로 몇 번 더 만날 것 같기도 했다.)<br />
+따라서 이 글에서는 내가 궁금했던 부분들을 조금 정리하고 대략적인 WebSocket을 알아보려고 한다.<br />
 참고한 자료는 크게 다음과 같다.
 
 - https://www.rfc-editor.org/rfc/rfc6455
@@ -46,12 +46,12 @@ RFC 6455 WebSocket 프로토콜 문서에는 어떻게 설명을 할까?
 - 1. **단일 TCP 연결**을 하면 안되는건가?
 - 2. **오버헤드를 조금 줄이면** 안되는 건가?
 
-이러한 내용들이 떠오르는데 이러한 내용을 WebSocket protocol에서 적용한다.
+이러한 내용들이 떠오르는데 이러한 내용을 WebSocket protocol에서 적용한다.<br />
 **WebSocket protocol은 HTTP를 전송 계층으로 사용하여 기존 프록시, 필터링, 인증 등의 이점을 얻는 기존 양방향 통신 기술을 대체하도록 설계**되었다.
 
 ## 🤝🏻 opening handshake
 
-일단 TCP 연결에서 이루어지는 3-way-handshake를 다들 알고 있을 것이라 생각한다. 그거와 비슷하지만 다르게 서로 연결을 하는 opening handshake 과정을 거친다.
+일단 TCP 연결에서 이루어지는 3-way-handshake를 다들 알고 있을 것이라 생각한다. 그거와 비슷하지만 다르게 서로 연결을 하는 opening handshake 과정을 거친다.<br />
 client에서 요청, server에서 응답 이렇게 두번의 과정을 통해서 진행이 되는데 이때 주고 받는 패킷을 확인해보자
 
 우선 클라이언트에서 보내는 패킷이다.
@@ -82,18 +82,18 @@ Sec-WebSocket-Accept: s3pPLMBiTxaQ9kYGzzhZRbK+xOo= // 클라이언트 Sec-WebSoc
 
 ## 📨 데이터 전송
 
-이제 연결은 어떻게 하는지 알 것 같고 서로 어떻게 데이터 통신을 하는지 알아보아야 할 것 같다.
+이제 연결은 어떻게 하는지 알 것 같고 서로 어떻게 데이터 통신을 하는지 알아보아야 할 것 같다.<br />
 이 내용은 **RFC 6455 5. Data Framing** 부분을 보면 대략 어떠한 구조로 보내는지 알 수 있다.
 
-해당 부분을 보면 WebSocket protocol에서는 **데이터를 일련의 frame을 사용하여 전송**한다고 한다.
-그러면 frame 이란 무엇인가?
+해당 부분을 보면 WebSocket protocol에서는 **데이터를 일련의 frame을 사용하여 전송**한다고 한다.<br />
+그러면 frame 이란 무엇인가?<br />
 frame은 데이터 전송 과정에서 가장 작은 단위의 데이터로 작은 헤더와 payload로 구성이 되어있다.
 ![](https://velog.velcdn.com/images/yooji0415/post/3ebe9777-dfb2-413b-b189-834c8145a064/image.png)
 
-(출처: https://www.rfc-editor.org/rfc/rfc6455#section-5.1)
+(출처: https://www.rfc-editor.org/rfc/rfc6455#section-5.1)<br />
 다음과 같이 구성이 되어있는데 대략적인 header 구조를 살펴보면 다음과 같다.
 
-- **FIN**: **메시지의 마지막 fragment(조각)**이란 것을 알려주는 플래그이다.
+- **FIN**: **메시지의 마지막 fragment(조각)** 이란 것을 알려주는 플래그이다.
 - **RSV1, RSV2, RSV3**: 기본은 0값이고 정의를 했을 경우에만 다른 값을 넣을 수 있다.
   만약 정의하지 않은 값이면 _Fail the WebSocket Connection_ 을 수행해야 한다.
 - **opcode**: **payload 데이터의 해석을 정의**한다. 이 또한 알 수 없는 opcode가 수신되면 _Fail the WebSocket Connection_ 을 수행해야 한다.
@@ -104,7 +104,7 @@ frame은 데이터 전송 과정에서 가장 작은 단위의 데이터로 작�
 - **MASK**: **payload 데이터를 마스킹할지 여부를 정의**한다. **1로 설정하면 마스킹 키가 존재하며 이 키는 payload 데이터의 마스킹을 해제하는데 사용**된다. **클라이언트에서 서버로 전송되는 모든 프레임은 이 비트를 1로 설정한다.**
 - **PayloadLen**: 이 프레임에 포함된 **데이터의 총 길이**를 나타낸다.
 
-대략적으로 메시지를 frame 단위로 나누고 이를 전송한다는 것을 알게 되었으니 이제 어떻게 송수신이 이루어지는지 간략하게 알아보려고 한다.
+대략적으로 메시지를 frame 단위로 나누고 이를 전송한다는 것을 알게 되었으니 이제 어떻게 송수신이 이루어지는지 간략하게 알아보려고 한다.<br />
 송신은 어떻게 될까? 이는 6. Sending and Receving Data 부분을 보면 알 수 있다.
 
 - 1. **엔드포인트는 우선 WebSocket 연결이 열린 상태인지를 확인한다.**
