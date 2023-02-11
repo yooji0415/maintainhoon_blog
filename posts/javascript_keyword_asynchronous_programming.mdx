@@ -272,7 +272,7 @@ Promise.resolve()
 2 -> 3 -> 1 이다!<br />
 왜일까? 앞서 살펴본 내용들만 생각하면 Task Queue에는 setTimeout, Promise 순으로 들어가서 순서대로 처리가 되어 1 -> 2 -> 3 일 것 같은데?
 
-이는 프로미스의 후속 처리 메서드의 콜백 함수들은 Task Queue가 아니라 **마이크로태스크 큐(Microtask Queue)**에 저장되기 때문이다.
+이는 프로미스의 후속 처리 메서드의 콜백 함수들은 Task Queue가 아니라 **마이크로태스크 큐(Microtask Queue)** 에 저장되기 때문이다.
 
 Microtask Queue는 TaskQueue와는 별도이다. <br />
 **Microtask Queue는 프로미스의 후속 처리 메서드의 콜백 함수가 일시 저장**된다.<br />
