@@ -1,0 +1,293 @@
+---
+title: 컴포넌트의 라이프사이클 & Hooks (3)
+date: 2023-02-21
+description: 이전에 다뤄보지 못한 Context 부분과 메모이제이션을 위한 useMemo, useCallback, memo 에 대해서 대략적으로 알아본다.
+category: react
+---
+
+# 🥲 자 드가자~
+
+아주 오랜 시간 전 컴포넌트의 라이프사이클과 Hooks 에 대해서 알아보는 시간을 가졌다.<br />
+이때 내가 빼먹은 것들이 있었는데 그걸 미뤘다기 보다는 다른 개념들을 공부하느라 시간이 걸려서 이제서야 다시 돌아오게 되었다.<br />
+이번 글에서는 **useContext, useMemo, useCallback, memo** 를 다뤄보려고 하는데 음… 길면 또 짤릴 수도 있다.<br />
+그리고 **이번 글에서 다루는 useMemo, useCallback 의 경우에는 다양한 글들이 있었고 고려할 부분이 한 두개가 아니라는 것을 알기 때문에 글에서 틀리거나 깊은 활용법에 대한 내용이 없을 수 있다.**<br />
+그점 양해 부탁드리면서 useContext 부터 들어가보려 한다.
+
+![](https://velog.velcdn.com/images/yooji0415/post/3e219bc8-47ba-4b8e-8f54-dbf1b3bd2f77/image.png)
+
+# 😎 useContext
+
+## 왜 useContext?
+
+일단 이 친구가 왜 필요할까?<br />
+우리는 컴포넌트를 만들면서 **하위 자식에게 필요한 정보들을 아래로 props** 를 통해서 내려준다.<br />
+하지만 그것도 조금 귀찮아 질 수 있는 것이 여러 자식이 생기고 만약 맨 아래 자식에게만 정보가 필요하다면 중간에 있는 자식들에게도 계속 내려줘야 하는 것이다.<br />
+또 자식으로 있는 컴포넌트가 아닌데 정보를 주려면 상위 컴포넌트에 state 를 두어야 하는 귀찮음도 생긴다.
+
+아니 이럴바에는 **전역으로 그냥 퉁 하나 쓰면 안되나?** 라는 생각을 적용한게 바로 **useContext** 이다.
+
+## 어떻게 되어있는 구조인가?
+
+어떻게 전역적으로 state 를 제공할까?
+
+한 번쯤 들어봤을 **옵저버 패턴**을 사용한다.<br />
+옵저버 패턴이란 **객체의 상태 변화를 관찰하는 관찰자들의 목록을 객체에 등록하여**<br />
+**상태변화가 있을 때마다 메서드 등을 통해 객체가 직접 목록의 각 옵저버들에게 통지**하도록 하는 디자인 패턴이다.
+
+React 에서는 **Context 를 사용해서 관찰자 패턴**을 제공한다.<br />
+아래는 해당 구조를 보여주는 그림이다.
+
+![](https://velog.velcdn.com/images/yooji0415/post/ca19b6da-7b6e-4646-abaf-a44beec9bc86/image.png)
+
+(출처: [ReactJS DoIt 리액트 프로그래밍 정석 (6장) :: 메모장](https://jsyovo.tistory.com/3))
+
+## 어떻게 사용할까?
+
+위에 있는 그림을 통해서 나온 그림을 통해서 유추가 약간은 가능한데<br />
+결국 **공급하는 사람**이 있어야 하고, **소비자**가 있어야 할 것이며, **어느 범위**까지 공급을 해야 할지도 알려줘야 할 것이다.
+
+```javascript
+import { useState, createContext } from 'react';
+import Children from './Children';
+
+// 아래 두 코드는 공급해줄 아이템들을 만드는 과정이다.
+// createContext 를 사용해서 생성하며 내부로는 초기값을 전달해준다.
+export const AppContext = createContext('');
+export const SetAppContext = createContext(() => {});
+
+const App = () => {
+  // 우리가 공급해줄 값을 정적으로 'test' 라고 넣어줘도 좋으나
+  // 우리가 하위 컴포넌트에서 수정을 하고 싶으면? 이라는 생각에
+  // state 값을 넣는 예제를 적었다.
+  const [app, setApp] = useState('test');
+
+  // 아래와 같이 하위 컴포넌트들에 공급할거에요~ 라는 표현으로
+  // context 의 provider 를 이용해서 감싸준다.
+  // 이때 value 로 넣어주는 값이 해당 context 가 제공하는 값이 된다.
+  return (
+    <SetAppContext.Provider value={setApp}>
+      <AppContext.Provider value={app}>
+        <Children />
+      </AppContext.Provider>
+    </SetAppContext.Provider>
+  );
+};
+```
+
+위 예제 코드는 **createContext** 를 활용해서 하위 컴포넌트인 **Children 에게 전역 state 를 제공하는 코드**이다.
+
+크게 두 개의 createContext 를 사용했는데 하나는 단순하게 값을 위해서 만든 것이며, 다른 하나는 값을 변경할 수 있는 함수를 전달하기 위함이다. 이를 통해서 하위 컴포넌트에서 값을 변경할 수 있도록 만들어 주었다.
+
+위 코드는 아래와 같이 수정할 수 있다.
+
+```javascript
+export const AppContext = createContext({
+  state: '',
+  action: () => {},
+});
+
+// 생략
+
+const value = {
+  state: app,
+  action: setApp,
+};
+
+return <AppContext.Provider value={value}></AppContext.Provider>;
+```
+
+우리는 지금까지 어떻게 공급해주느냐, 공급자 입장을 보았다.<br />
+그러면 사용자 입장에서는 어떻게 사용하면 될끼?<br />
+이는 아래와 같다. 참고로 아래 코드는 위 코드로 수정했다는 전재로 작성했다.
+
+```javascript
+import { useContext } from 'react';
+import { AppContext } from './App';
+
+const Children = () => {
+  const { state, action } = useContext(AppContext);
+  return (
+    <div>
+      <p>{state}</p>
+      <button type="button" onClick={() => action('click')} />
+    </div>
+  );
+};
+```
+
+useContext 글인데 언제 나오나 하신 분들이 있을 것이다.<br />
+**useContext 는 바로 여기 사용자 입장**에서 사용된다.<br />
+**기존에는 context 의 consumer 를 사용해서 감싸줘야 하는데 이 과정을 위와 같이 사용할 수 있게 도와준다.**
+
+이러한 과정을 거치면서 상위에서 하위로, 혹은 전역으로 이동하면서 props 를 이용해서 전달하던 방식의 불편함을 해소 할 수 있다.
+
+## 그런데 다들 왜 Redux, Recoil 을 사용하는 것이죠?
+
+그 이유를 모두 찾아본 것은 아니나, **리렌더링에 관한 이슈가 있는 것**을 확인했다.
+
+**Provider 하위에서 context 를 구독하는 모든 컴포넌트 및 하위 컴포넌트는 Provider 의 value props 가 바뀔 때 마다 다시 렌더링 된다.**
+
+자주 사용하는 Recoil 의 경우에도 그럴까? 결과는 아니다.<br />
+아래 레퍼런스를 보면 해당 과정을 확인해볼 수 있다.<br />
+
+- [TILReact 상태관리 고민 (Context, Recoil)](https://velog.io/@dldngus5/TILReact-%EC%83%81%ED%83%9C%EA%B4%80%EB%A6%AC-%EA%B3%A0%EB%AF%BC-Context-Recoil)
+
+또한 Recoil 이나 Redux 는 다른 장점들도 가지고 있기 때문에 최근 시장에서 많이 사용하는 것으로 보인다.
+
+# 📝 useMemo
+
+useMemo 의 경우 말 그대로 계산된 값을 저장한다는 의미입니다.<br />
+아니 useState 도 값을 들고 있는 것 아닌가?
+
+useMemo 를 어떠한 때에 사용하는지를 살펴보면 아 그렇구나 할 수 있다.<br />
+아래 코드를 봐보자
+
+```javascript
+const component = ({ x, y }) => {
+  const result = slowCompute(x, y);
+  return <div>{z}</div>;
+};
+```
+
+위 컴포넌트의 result 값을 받는 부분을 봐보자<br />
+이게 일반적인 컴포넌트면 어떨끼? 매번 slowCompute 라는 느린 함수(제가 설정했습니다.) 가 돌 것이다.<br />
+설령 x, y 가 변경된게 아니더라도 부모가 리렌더링 되면 자식도 리렌더링 되기 때문이다.
+
+이를 아래와 같이 useMemo 를 통해서 사용할 수 있다.
+
+```javascript
+import { useMemo } from 'react';
+
+const component = ({ x, y }) => {
+  const result = useMemo(() => slowCompute(x, y), [x, y]);
+  return <div>{z}</div>;
+};
+```
+
+위 코드는 useMemo 를 통해서 값을 저장한 것이다.<br />
+어떤 값이면 당연히 x, y 를 함수에 넣었을 때 결과이다. 이렇게 하면 뭐가 좋은 것인가?
+
+**useMeme 는 두 번째 인자로 넣어준 배열이 바뀌기 전까지는 이전의 값을 그대로 들고 있는다.**<br />
+이 말은 부모가 리렌더링 되는 경우에 자식 컴포넌트 측에서 계산에 소요되는 시간이 아껴진다는 것이다.(물론 x, y 값은 변경된게 아니라고 가정한다.)
+
+## 근데 자주 안쓸 것 같은 느낌은 뭐죠…?
+
+등가교환이라는 강철의 연금술사 명언 마냥 이것도 마술은 아니다.<br />
+분명히 저 함수에 걸리는 시간을 아껴서 메모리를 더 차지했을 것이다.<br />
+또한 우리가 프론트엔드 작업을 떠올리면 수초, 수십초가 걸리는 작업이 많을 것인가?<br />
+그거는 아닐 것으로 보인다. 설령 그런 것이 있다 하더라도 비동기로 처리하는 방법도 있을 것이다.
+
+그렇다고 우리가 쓸모없는 것을 배웠냐? 그건 아니다.<br />
+확실히 useMemo 는 리렌더링이 잦은 자식 컴포넌트가 시간이 긴 작업을 들고 있는 경우에 좋다. 하지만 위에서 말한 내용은 그런 상황이 잘 안나온다는 것이다.
+
+하지만 아래에서 살펴볼 memo 를 확인하고 아 이렇게?!? 라는 생각이 들 수 있을 것이다.
+
+# useCallback
+
+useCallback 은 useMemo 와 비슷한 Hook 이다.<br />
+useMemo 는 특정 결과값을 재사용 할 때 사용하는 반면, **useCallback 은 특정 함수를 새로 만들지 않고 재사용**하고 싶을때 사용한다.
+
+이 또한 memo 와 사용할 때 본인의 능력을 발휘할 수 있는데 일단은 어떻게 쓰는지만 빠르게 살펴보고 memo 를 살펴보자
+
+```javascript
+import { useCallback, useState } from 'react';
+import Profile from './Profile';
+
+function App() {
+  const [name, setName] = useState('');
+  const [profile, setProfile] = useState('JiHoon Yoo');
+  // 아래와 같이 사용한다.
+  // useMemo 와 유사하게, 저장할 함수, 변경을 감지할 변수 배열
+  // 이렇게 사용하며 제공한 변수의 값이 바뀌지 않는 이상 저장된 값을 사용한다.
+  const onSave = useCallback(() => {
+    console.log(profile);
+  }, [profile]);
+
+  return (
+    <div className="App">
+      <input type="text" value={name} onChange={(e) => setName(e.target.value)} />
+      <Profile data={profile} />
+    </div>
+  );
+}
+```
+
+위 코드에서 대략적인 useCallback 사용법에 대해서 알아볼 수 있다.<br />
+**함수를 저장해서 재사용한다, 의존성 배열 안에 있는 변수의 변경이 아니면 그대로 재사용한다,** 라는 개념을 알 수 있다.
+
+그러면 위 함수에서 Profile 컴포넌트는 리렌더링이 안일어나는가?<br />
+그거는 아니다. 우리는 리렌더링이 일어나는 여러 과정을 알고 있다.
+
+1. **부모의 리렌더링**
+2. **props 의 변경**
+3. **state 의 변경**
+4. **forceUpdate**
+
+대략 이렇게 4가지다.<br />
+우리가 처리한 **useCallback 작업은 props 의 변경을 막은거**다.<br />
+하지만 부모의 state 변경으로 인한 부모의 리렌더링을 막은 것은 아니다.<br />
+이럴 어찌해야 한담…
+
+# 🧺 memo
+
+이럴 때 사용하는 것이 **React 의 memo** 이다.<br />
+**memo 는 컴포넌트의 props 가 바뀌지 않았다면 리렌더링을 방지하여 컴포넌트의 리렌더링 성능 최적화**를 해줄 수 있다.
+
+이거를 이용하기 위해서 앞에서 두 개를 봤다 하더라도 과언이 아닌데 생각을 해보면 함수를 재생성하면 당연히 해당 객체의 레퍼런스가 바뀔 것이고, 메모의 경우도 바뀔 것이다.<br />
+이는 동일한 값을 가지고 있다 하더라도 동일할 것이다.<br />
+우리는 **이를 방지하기 위해서 useMemo 와 useCallback** 을 배운 것이다.<br />
+그리고 이를 활용해서 이제 memo 를 통해서 **부모의 리렌더링이 일어나더라도 props 가 안바뀌었을 경우 리렌더링을 막을 수 있게** 될 것이다.
+
+```javascript
+import React from 'react';
+
+const Profile = ({ data }) => {
+  return (
+    <div>
+      <p>{data}</p>
+    </div>
+  );
+};
+
+export default React.memo(Profile);
+```
+
+사용법은 위와 같이 간단하다.<br />
+export 를 해주기 전에 **React.memo 함수를 이용해서 감싸주면** 된다.<br />
+이렇게 감싸줄 경우 이 Profile 컴포넌트의 경우는 data 라는 **props 가 변경되는 것이 아니면 리렌더링이 안 일어날 것**이다.
+
+추가적으로 React.memo 의 **두 번째 파라미터를 잠깐 알아보고 넘어가자면**<br />
+**이 props 가 동일하다 라는 조건을 좀 더 디테일**하게 설정을 할 수 있다.
+
+```javascript
+export default React.memo(Test, (prevProps, nextProps) => prevProps.data === nextProps.data);
+```
+
+위와 같이 두 번째 파라미터로 조건을 넣어주면 해당 조건을 통해서 리렌더링이 필요한지 아닌지를 판별해준다.<br />
+하지만 이는 그렇게까지 권장되는 것은 아닌게 만약 props 로 받는 것이 data 뿐만 아니라 다른 것 들도 존재한다면 해당 값들이 변경되었을 경우 **실시간으로 값이 반영되지 않을 수 있기 때문에 신경을 써서 사용하길 추천**한다.
+
+## 그러면 모두 다 그냥 memo 박아버려?
+
+이거는 조금 비효율 적인 발상인게
+일단 우리는 이 useMemo, useCallback, memo 를 배운 이유는 컴포넌트의 리렌더링을 막기 위해서이다.<br />
+그러면 애초에 이 처리를 해주는 친구들은 리렌더링이 불필요하게 많거나 그럴 필요가 없는 친구들이라는 것이다.<br />
+하지만 우리가 개발을 하면서 보통 props 를 받으면 해당 값의 변화로 인해서 DOM 혹은 return 하는 구조를 바꾸기 위해서 사용하는 경우가 더 많은데 memo 를 모두 처리한다는 것은 앞뒤가 안 맞는 느낌이다.
+
+오히려 **memo, useCallback, useMemo 를 남용하면 불필요한 비교처리, 저장하는 메모리 낭비** 등이 생길 수 있다.<br />
+따라서 **꼭 필요할 때만, 리렌더링을 꼭 막고 싶을 경우에 적합하게 사용**하는 것이 맞는 것이다.
+
+이와 관련해서 좋은 자료가 있어 아래 링크를 남겨두었다.<br />
+
+- [리액트의 useCallback useMemo, 정확하게 사용하고 있을까 – yceffort](https://yceffort.kr/2022/04/best-practice-useCallback-useMemo)
+
+# 🥳 마무리하며
+
+React 의 렌더링 성능 향상을 위한 방법 중 하나인 메모이제이션에 관련된 Hook 들을 이번에 살펴보았다.<br />
+이전에 프로젝트를 하면서도 대략적으로 조심조심 사용했던 개념들을 이제는 나름은 조금 알게 된 것 같아서 보람차다.<br />
+하지만 맨 아레에 링크로 남긴 자료를 보면서 어떻게 써야 잘 쓰는 것인가에 대한 생각은 약간 부족한 것 같다.<br />
+이는 실전에서 많이 사용해보고 그에 따른 결과를 살펴보면서 성장할 수 있을 것이라 본다.
+
+그리고 나름은 길었던 Hooks 살펴보기 과정이 끝났는데 뭔가 끝난 것 같지는 않다.<br />
+더 글을 쓸 것이 있을 것이라 보고 궁금하거나 살펴봐야 할 내용이 생기면 글을 또 쓰게 될 것 같다 하하…
+
+이번에도 두서없이 긴 글 읽어주신 분들께 감사인사를 드린다.
