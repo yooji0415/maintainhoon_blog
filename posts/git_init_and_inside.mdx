@@ -1,0 +1,245 @@
+---
+title: 깃의 파일 관리 비밀 (with .git)
+date: 2023-04-09
+description: 깃이 어떻게 파일을 관리할까? 내부에 생성되는 .git 폴더 내부를 가볍게 둘러보면서 대략적인 방식을 이해해보자.
+category: git
+---
+
+# 👶🏻 git init
+
+앞서 깃은 코드의 버전을 관리하는 **분산형 버전 관리 시스템**이라고 배웠다.<br />
+이 말은 달리 말하면 **파일의 변경내역을 모두 저장하고 관리한다는 뜻**이다.<br />
+이걸 어떻게 하는 것일까?<br />
+이 git 영업 비밀을 조금만 맛봐보도록 하자
+
+---
+
+# ⭐️ .git
+
+깃은 우리가 흔히 쓰는 컴퓨터 파일, 폴더와 유사한 구조를 사용한다.<br />
+이거를 어떻게 확인할 수 있을까? **.git 폴더**를 찾으면 된다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/6eb85ae4-ae49-4d62-af35-d0fa0b74d181/image.png)
+</p>
+
+이 .git 폴더 구조는 블로그를 운영 중인 폴더의 .git 폴더이다.
+
+이 폴더는 어떤 상황에 만들어질까? <br />
+한 번 아에 새로운 폴더를 만들고 명령어를 통해서 초기화를 해보자
+
+```bash
+mkdir test
+cd test
+git init
+```
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/2d9b4a3c-1a34-4653-97ed-5ff351b778bb/image.png)
+</p>
+
+뭔가 다른 부분들이 많다.<br />
+나는 별 크게 건들지를 않았는데 왜 다른 폴더들이랑 파일들이 생길까?<br />
+모두 다뤄볼 수는 없겠지만 중요 부분들을 살펴보도록 한다.
+
+---
+
+## index
+
+지금 index파일이 없다.<br />
+하지만 우리는 생성할 수 있다. (어케요?)<br />
+새롭게 만든 test 폴더에 아무 파일을 하나 만들고 해당 파일을 **add** 해보자
+
+```bash
+echo "hello?" > test.txt
+git add test.txt
+```
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/cac1d766-9996-4239-8f5b-a3d7d5243fc1/image.png)
+</p>
+
+이게 뭔일인가? <br />
+틀린그림 찾기를 한 번 해보자면
+
+1. **objects 폴더**에 91 폴더가 생겼고 내부에 괴상한 파일이 생겼다.
+2. **index 파일**이 생겼다.
+
+이 index 파일이 왜 생겼을까? 심지어 그대로 누르면 보이지도 않는다.<br />
+아래 명령어를 통해서 index 내부를 볼 수 있다고 하니 한번 알아보자
+
+```bash
+git ls-files --stage
+```
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/5025920e-b06a-4352-a33e-1055d455b45b/image.png)
+</p>
+
+어어 91 익숙하다? 하고 보면 <br />
+**9101792…** 이라는 문자는 **objects>91>01792ba81…** 파일과 같다.<br />
+이는 **index가 저장하는 세 가지 속성**과 연관이 있다.<br />
+[#git index를 좀 더 자세히 ](http://ohyecloudy.com/pnotes/archives/1970/) 라는 좋은 레퍼런스를 참고해서 간단 설명을 해보자면
+
+1. **binary file**
+   1. 파일 혹은 디렉토리의 유형을 알려주는 코드이다.
+   2. 코드는 아래와 같다.
+      1. 040000: 디렉토리
+      2. 100644: 일반 / 비실행 파일
+      3. 100664: 일반 / 비실행 / 그룹 쓰기 가능 파일
+      4. 100755: 일반 실행 파일
+      5. 120000: Symbolic link
+      6. 160000: Git link
+2. **maps paths to blob ids**
+   1. blob의 id를 저장한다.
+   2. 이 blob 이란 것은 이후 더 알아보자
+3. **cached [lstat](https://pubs.opengroup.org/onlinepubs/009695399/functions/lstat.html) information**
+
+그러면 0은 뭐지 해서 살펴보니 이는 **slot 의 번호로 0인 경우 정상적인 경우**, **1, 2, 3 인 경우 conflict 가 났을 때의 코드**이다. 이는 뒤에서 conflict 를 학습하고 아 그랬겠구나 정도로 살펴보자
+
+그러면 이 index 파일이 이렇게 3가지 속성을 저장하는 이유가 뭘까?<br />
+**index 파일은 스테이지 영역에 있는 파일들을 관리**한다.
+
+여기서 스테이지 영역이란 **워킹 디렉토리에서 제출된 tracked 파일들을 관리하는 영역**이다. <br />
+한마디로 **깃이 지켜볼 파일 리스트를 관리하는게 index 파일**인 것이다.
+
+우리가 git add 를 했을 때 해당 파일이 스테이지 영역으로 이동했다는 것이다! <br />
+(스테이지 영역은 곧 보도록 하자)
+
+---
+
+## objects
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/ee75ed9f-52ef-40aa-a938-4b2614fa87d6/image.png)
+</p>
+
+[이미지 출처: https://sjh836.tistory.com/74 ](https://sjh836.tistory.com/74)
+
+### blob
+
+add 를 하고 변경된 요소 중 다른 하나는 **objects에 폴더와 파일이 생겼다는 것**이다.<br />
+이 파일은 뭘까? <br />
+아래 명령어를 통해서 파악 해볼 수 있다.
+
+```git
+git cat-file -p [파일 명]
+```
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/ec9accc7-f675-4f0d-bf2e-630726eeb696/image.png)
+</p>
+
+어라? 본인이 작성했던 그 글이 그대로 남아있다.<br />
+이 파일은 무엇일까?
+
+바로 **blob**이다.<br />
+이 blob 파일들은 어떻게 만들어질까? 대략적인 순서는 이렇다.
+
+1. 파일을 **git add 했을 때 생성**된다.
+2. 이때 **파일의 모든 내용을 SHA-1 방식의 해시 함수에 넣어 40자리 16진수 숫자**를 만든다.
+3. 이 숫자 중 **앞 2글자는 폴더** 이름, **나머지는 blob 파일의 이름**으로 설정한다.
+4. 파일의 **모든 내용은 압축을 해서 blob 파일 내부에 저장**한다.<br />
+   (맨 처음에 파일을 등록할 경우는 압축을 하지 않는다는 말도 있는데 이는 본인이 조금 더 알아보려고 한다.)
+
+한마디로 **압축을 통해 작게 해서 원본 파일 혹은 변경사항을 저장하는 것이 이 blob** 인 것이다.
+
+### tree
+
+이제 commit을 한번 해보자.
+
+```bash
+git commit -m "first"
+```
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/595420e4-07d5-464b-82a0-b84e2b131e7c/image.png)
+</p>
+
+이번에는 2개나 생겼다. 무엇일까? <br />
+한번 내부를 파악해보자
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/3b8843a3-4269-45aa-ab69-2fc9707e2a14/image.png)
+</p>
+
+안에 익숙한 모습들이 보인다.<br />
+이 파일은 **tree** 파일이다.<br />
+내부에 **commit한 시점의 버전의 파일들에 대한 정보**를 가지고 있다. <br />
+만약 commit에 올렸던 즉 add 했던 파일들이 여러 개였다면 tree 안에 여러 파일에 대한 정보가 남아있을 것이다.
+
+#### commit
+
+다른 하나를 또 열어보자
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/98543b10-7d03-4c2f-b689-53e7894a1696/image.png)
+</p>
+
+**tree hash 값, author, committer, commit message** 의 정보를 가지고 있다.<br />
+이 파일은 **commit** 파일이다.
+
+실제 commit을 누가 했는지, 저자가 누구인지, 그리고 그 commit에 포함된 파일의 내역을 저장하는 tree 파일의 hash 값을 통해서 변화 내역을 저장한다.
+
+사실상 이 commit 파일이 **우리가 항상 이야기하는 commit의 본채**이다.
+
+### 한 번 더 해볼까?
+
+이제는 기존의 test.txt 파일을 변경시키고 add, commit을 한 번 해보자
+
+```bash
+[text.txt 파일에 ?를 하나 더 붙였다.]
+git add text.txt
+git commit -m "second"
+```
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/d1a40ed0-75a3-4cef-aa05-59353ac23be5/image.png)
+</p>
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/068de98c-720b-4133-993d-7092597177fc/image.png)
+</p>
+
+blob 과 tree 의 경우는 기존과 동일하게 내부 파일 저장과 해당 blob의 정보를 저장하는 듯 보인다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/dd9f3041-6f02-4a59-a191-97b9229ed333/image.png)
+</p>
+
+commit 에 새로운 것이 생겼다. <br />
+바로 **parent 에 대한 정보**인데 저 hash 값이 굉장히 익숙하다.<br />
+맞다! 바로 **first commit의 hash 정보**이다. 이렇게 꼬리 물기를 통해서 commit 기록들이 저장되는 것이다.
+
+### 정리
+
+정리하자면 이 **objects 폴더 안에 있는 것은 우리의 코드의 변경과정과 내용을 전부 보관하고 있는 저장소**로 **commit 파일에서 parent를 통해 연결고리를 만든 구조**로 생각하면 된다. 그리고 이 연결고리를 통해서 원하는 시점의 코드 상태를 불러오는 것도 가능한 것이다.
+
+---
+
+## refs
+
+위 부분까지 이해가 되었다면 한 가지 궁금증이 들 수 있는게<br />
+가장 최근의 **commit 정보가 어딘가에는 저장**되어야 할 것으로 보이는데 어디에 저장할까? 라는 궁금증이다.
+
+이를 저장하는 부분이 refs 폴더이다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/d25a3093-53b3-4ff6-a3aa-23482b4142af/image.png)
+</p>
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/c6cc6bd2-7e82-47df-b9c4-f890d2dd8e9c/image.png)
+</p>
+
+이 refs 폴더에서 **heads 라는 폴더**가 있고 이 내부에서 **가장 최신 commit의 hash 값을 저장**하고 있다. 이를 이용해서 새로운 commit 의 parent를 연결해 줄 수 있을 것이다.
+
+<p align="center">
+  ![](https://velog.velcdn.com/images/yooji0415/post/6dd09fab-fc3d-400f-8fad-d0dea1442921/image.png)
+</p>
+
+위 그림은 다른 프로젝트의 refs 의 상태인데 상당히 복잡해보인다.<br />
+**remotes 라는 폴더**도 보이고 **stash 라는 파일**도 보인다.<br />
+이러한 내용들은 앞으로 차츰 나올 것이다.
+
+일단 오늘은 이렇게 마무리를 해볼까 한다.
