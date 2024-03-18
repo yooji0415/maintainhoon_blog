@@ -36,7 +36,7 @@ export default function Home({ posts }: InferGetStaticPropsType<typeof getStatic
           className="rounded-2xl"
         />
         <div className="min-w-[250] max-w-[300px]">
-          <h2 className="font-bold text-xl">프론트엔드 개발자 유지훈 입니다.</h2>
+          <h2 className="font-bold text-xl">도전하는 개발자 유지훈 입니다.</h2>
           <br />
           <p>건강한 성장곡선을 위해서 노력합니다.</p>
           <p>정리를 하는 습관을 들이려고 노력합니다.</p>
